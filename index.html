@@ -843,6 +843,33 @@
             
             showScreen('screen-past-scoreboard');
         }
+        // [추가] 경기 이어가기 함수
+        function extendGame() {
+            showModal("현재 라운드를 종료하고 다음 라운드로 이어가시겠습니까?", true, () => {
+                // 라운드 카운트 증가
+                roundCount++;
+                
+                // 기존 activeHoles 데이터를 그대로 유지하면서 라운드만 추가 (루프 방식)
+                let holesPerRound = currentMode.length * 9;
+                let baseSequence = activeHoles.slice(0, holesPerRound);
+                let newHoles = baseSequence.map(h => ({...h, r: roundCount})); 
+                
+                activeHoles = activeHoles.concat(newHoles);
+                players.forEach(p => { 
+                    p.scores = p.scores.concat(newHoles.map(h=>h.p)); 
+                    p.confirmed = p.confirmed.concat(new Array(newHoles.length).fill(false)); 
+                });
+                
+                currentHoleIndex++; 
+                isConfirmed = false; 
+                
+                // 게임 화면으로 복귀
+                renderGameScreen(); 
+                showScreen('screen-game'); 
+                showToast("다음 라운드를 이어갑니다!");
+                saveCurrentState();
+            });
+        }
     </script>
 </body>
 </html>    

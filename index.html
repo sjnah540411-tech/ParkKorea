@@ -703,14 +703,26 @@
         }
 
         function processFinishGame() {
-            document.getElementById('result-park-title').innerText = `🏆 경기 결과 [${currentParkName}]`;
-            showScreen('screen-result');
+           let ranked = players.map(p => {
+    let colScores = {}; 
+    let roundScores = {}; 
+    let total = 0;
+
+    // 데이터를 [코스-라운드] 키값으로 묶어서 합산
+    activeHoles.forEach((h, i) => { 
+        if(p.confirmed[i]) {
+            let key = `${h.c}(R${h.r})`; // 예: A(R1)
+            let roundKey = `R${h.r}`;
+            if (!colScores[key]) colScores[key] = 0;
+            if (!roundScores[roundKey]) roundScores[roundKey] = 0;
             
-            let playedCourses = currentMode.split('');
-            let rounds = [];
-            for(let r=1; r<=roundCount; r++) {
-                let roundCourses = playedCourses.map(c => ({ c: c, r: r, label: `${c}(R${r})` }));
-                rounds.push({ r: r, courses: roundCourses });
+            colScores[key] += p.scores[i];
+            roundScores[roundKey] += p.scores[i];
+            total += p.scores[i];
+        }
+    });
+    return { name: p.name, colScores, roundScores, total };
+}).sort((a,b) => a.total - b.total);
             }
 
             let html = `<thead><tr><th>이름</th>`;
@@ -873,7 +885,27 @@ function shareResult() {
         }
     });
 }
-       
+    // 결과 테이블(thead) 생성 부분
+let playedKeys = []; // A(R1), B(R1) 등을 순서대로 담음
+activeHoles.forEach(h => {
+    let key = `${h.c}(R${h.r})`;
+    if(!playedKeys.includes(key)) playedKeys.push(key);
+});
+
+let html = `<thead><tr><th>이름</th>`;
+playedKeys.forEach(k => { html += `<th>${k}</th>`; });
+html += `<th style="background:var(--highlight-green);">총합계</th></tr></thead><tbody>`;
+
+// 결과 테이블(tbody) 생성 부분
+ranked.forEach((p, rank) => {
+    html += `<tr><td style="font-weight:bold;">${rank+1}위 ${p.name}</td>`;
+    playedKeys.forEach(k => {
+        html += `<td>${p.colScores[k] || 0}</td>`;
+    });
+    html += `<td style="font-weight:bold; background:var(--highlight-green); color:#d32f2f;">${p.total}</td></tr>`;
+});
+html += `</tbody>`;
+document.getElementById('result-table').innerHTML = html;   
     </script>
 </body>
 </html>    
